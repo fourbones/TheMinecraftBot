@@ -1,0 +1,4 @@
+# Discord Minecraft Whitelist Bot Requirements
+
+mcrcon==0.7.0
+discord.py==2.3.1
