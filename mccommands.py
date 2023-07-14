@@ -88,7 +88,7 @@ def is_mcname_permission_allowed(member):
 class HelpView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        self.add_item(HelpGithubButton("GitHub",discord.ButtonStyle.url,None, "https://4bones.de"))
+        self.add_item(HelpGithubButton("GitHub",discord.ButtonStyle.url,None, "https://github.com/fourbones/TheMinecraftBot"))
         self.add_item(HelpGithubButton("Setup", discord.ButtonStyle.green, "⚙️", None))
 
 class HelpGithubButton(discord.ui.Button):
