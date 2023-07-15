@@ -36,6 +36,7 @@ class mccommands(commands.Cog):
         try:
             discord_name = str(interaction.user.name)
             if is_mcname_permission_allowed(discord_name):
+                await check_json(discord_name)
                 await save_to_json(discord_name, mcname)
                 print(f"|🗄|{datetime.datetime.now().strftime('%d/%m/%y %H:%M:%S')}| - saved DC: {discord_name} MC: {mcname} to json")
                 await add_to_whitelist(discord_name, mcname)
@@ -50,6 +51,27 @@ class mccommands(commands.Cog):
     @app_commands.command(name="mc-help", description="this will return some help hopefully.")
     async def mchelp(self, interaction: discord.Interaction):
         await interaction.response.send_message(embed=embeds.Help(), view = HelpView())
+
+async def check_json(discord_name):
+    config_reload()
+    data = {}
+    try:
+        with open('user_data.json', 'r') as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        pass
+
+    minecraft_name = data[discord_name]["minecraft_name"]
+    if minecraft_name != "":
+        print(f"|🔍|{datetime.datetime.now().strftime('%d/%m/%y %H:%M:%S')}| - Checked Json File and deleted the old {minecraft_name} from the whitelist")
+        rcon = mcrcon.MCRcon(host=str(server_ip), password=str(server_rcon_password), port=int(server_rcon_port))
+        rcon.connect()
+        rcon.command(f'whitelist remove {minecraft_name}')
+        rcon.command(f'kick {minecraft_name} Du bist nicht mehr auf der Whitelist!')
+        rcon.disconnect()
+    else:
+        print(f"|🔍|{datetime.datetime.now().strftime('%d/%m/%y %H:%M:%S')}| - Checked Json File and no old user name was found")
+
 
 
 async def save_to_json(discord_name, minecraft_name):
@@ -68,7 +90,7 @@ async def save_to_json(discord_name, minecraft_name):
 
 async def add_to_whitelist(discord_name, minecraft_name):
     config_reload()
-    rcon = mcrcon.MCRcon(host=str(server_ip), password=str(server_rcon_password), port=int(server_ip))
+    rcon = mcrcon.MCRcon(host=str(server_ip), password=str(server_rcon_password), port=int(server_rcon_port))
     rcon.connect()
     rcon.command(f'whitelist add {minecraft_name}')
     rcon.disconnect()
@@ -88,7 +110,8 @@ def is_mcname_permission_allowed(member):
 class HelpView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        self.add_item(HelpGithubButton("GitHub",discord.ButtonStyle.url,None, "https://github.com/fourbones/TheMinecraftBot"))
+        self.add_item(HelpGithubButton("GitHub",discord.ButtonStyle.url,None, "https://4bones.de"))
+        self.add_item(HelpGithubButton("Wiki", discord.ButtonStyle.url, None, "https://github.com/fourbones/TheMinecraftBot/wiki"))
         self.add_item(HelpGithubButton("Setup", discord.ButtonStyle.green, "⚙️", None))
 
 class HelpGithubButton(discord.ui.Button):
