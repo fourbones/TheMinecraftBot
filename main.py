@@ -79,6 +79,7 @@ async def remove_from_whitelist(member):
     rcon.command(f'whitelist remove {minecraft_name}')
     rcon.command(f'kick {minecraft_name} Du bist nicht mehr auf der Whitelist!')
     rcon.disconnect()
+    print(f"|🖥|{datetime.datetime.now().strftime('%d/%m/%y %H:%M:%S')}| - removed {minecraft_name} from the whitelist")
 
 
 def is_mcname_permission_allowed(member):
