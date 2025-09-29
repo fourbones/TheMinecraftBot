@@ -1,9 +1,15 @@
-import discord, datetime
-from discord.ext import commands
-from CodeUtils import embeds
-import mccommands, setup
+import datetime
 import json
+
+import discord
+from discord.ext import commands
+
+from CodeUtils import embeds
+import mccommands
+import setup
 import mcrcon
+
+from data_store import load_user_data, save_user_data
 
 bot_token = None
 server_ip = None
@@ -24,6 +30,7 @@ def config_reload():
 
 
 config_reload()
+load_user_data()
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -64,47 +71,52 @@ async def on_member_update(before, after):
 
 async def remove_from_whitelist(member):
     config_reload()
-    data = {}
-    try:
-        with open('user_data.json', 'r') as file:
-            data = json.load(file)
-    except FileNotFoundError:
-        pass
+    data = load_user_data()
 
     discord_name = str(member)
-    minecraft_name = data[discord_name]["minecraft_name"]
+    record = data.get(discord_name)
+    if not record:
+        return
+
+    minecraft_name = record.get("minecraft_name", "")
+    if not minecraft_name:
+        return
 
     rcon = mcrcon.MCRcon(host=str(server_ip), password=str(server_rcon_password), port=int(server_rcon_port))
-    rcon.connect()
-    rcon.command(f'whitelist remove {minecraft_name}')
-    rcon.command(f'kick {minecraft_name} Du bist nicht mehr auf der Whitelist!')
-    rcon.disconnect()
-    print(f"|🖥|{datetime.datetime.now().strftime('%d/%m/%y %H:%M:%S')}| - removed {minecraft_name} from the whitelist")
+    try:
+        rcon.connect()
+        rcon.command(f'whitelist remove {minecraft_name}')
+        rcon.command(f'kick {minecraft_name} Du bist nicht mehr auf der Whitelist!')
+        print(f"|🖥|{datetime.datetime.now().strftime('%d/%m/%y %H:%M:%S')}| - removed {minecraft_name} from the whitelist")
+    finally:
+        try:
+            rcon.disconnect()
+        except Exception:
+            pass
+
+    record["minecraft_name"] = ""
+    record["permission"] = False
+    data[discord_name] = record
+    save_user_data(data)
 
 
 def is_mcname_permission_allowed(member):
-    with open('user_data.json', 'r') as file:
-        data = json.load(file)
+    data = load_user_data()
 
     discord_name = str(member)
     if discord_name in data:
-        return data[discord_name]["permission"]
+        return data[discord_name].get("permission", False)
 
     return False
 
 
 async def set_mcname_permission(member, permission):
-    with open('user_data.json', 'r+') as file:
-        data = json.load(file)
+    data = load_user_data()
 
-        discord_name = str(member)
-        if discord_name not in data:
-            data[discord_name] = {"minecraft_name": "", "permission": False}
-
-        data[discord_name]["permission"] = permission
-
-        file.seek(0)
-        json.dump(data, file, indent=4)
-        file.truncate()
+    discord_name = str(member)
+    record = data.get(discord_name, {"minecraft_name": "", "permission": False})
+    record["permission"] = permission
+    data[discord_name] = record
+    save_user_data(data)
 
 bot.run(str(bot_token))
