@@ -60,8 +60,8 @@ async def on_ready():
 async def on_member_update(before, after):
     if server_member_role_name in [role.name for role in after.roles]:
         if server_member_role_name not in [role.name for role in before.roles]:
-            await after.send(embed=embeds.MCaddUserEmbed())
             await set_mcname_permission(after, True)
+            await notify_role_added(after)
 
     if server_member_role_name not in [role.name for role in after.roles]:
         if server_member_role_name in [role.name for role in before.roles]:
@@ -98,6 +98,21 @@ async def remove_from_whitelist(member):
     record["permission"] = False
     data[discord_name] = record
     save_user_data(data)
+
+
+async def notify_role_added(member):
+    try:
+        await member.send(embed=embeds.MCaddUserEmbed())
+    except discord.Forbidden:
+        print(
+            f"|⚠️|{datetime.datetime.now().strftime('%d/%m/%y %H:%M:%S')}| - "
+            f"Could not DM {member}: DMs are disabled."
+        )
+    except discord.HTTPException as exc:
+        print(
+            f"|⚠️|{datetime.datetime.now().strftime('%d/%m/%y %H:%M:%S')}| - "
+            f"Failed to DM {member}: {exc}"
+        )
 
 
 def is_mcname_permission_allowed(member):
