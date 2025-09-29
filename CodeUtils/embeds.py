@@ -1,7 +1,8 @@
-import discord
-from discord.ext import commands
-from datetime import datetime
 import json
+from datetime import datetime
+from typing import Optional
+
+import discord
 
 server_ip = None
 server_rcon_port = None
@@ -74,5 +75,28 @@ def ConfigChanged():
     config_reload()
     embed = discord.Embed(title=embed_title, color=discord.Color.green(),
                           description="The Config was saved")
+    embed.set_footer(text=f"created by {bot_name} | {datetime.now().strftime('%d/%m/%y %H:%M:%S')}")
+    return embed
+
+
+def MCStatusEmbed(minecraft_name: Optional[str], allowed: bool):
+    config_reload()
+
+    if minecraft_name:
+        description = (
+            "Dein Discord-Account ist aktuell mit dem Minecraft-Namen "
+            f"`{minecraft_name}` verknüpft."
+        )
+        color = discord.Color.green()
+    else:
+        description = (
+            "Für deinen Discord-Account ist noch kein Minecraft-Name hinterlegt. "
+            "Nutze `/mc-setname`, um dich auf die Whitelist setzen zu lassen."
+        )
+        color = discord.Color.orange()
+
+    embed = discord.Embed(title=embed_title, color=color, description=description)
+    status_text = "aktiv" if allowed else "inaktiv"
+    embed.add_field(name="Whitelist-Zugriff", value=f"`{status_text}`", inline=False)
     embed.set_footer(text=f"created by {bot_name} | {datetime.now().strftime('%d/%m/%y %H:%M:%S')}")
     return embed
